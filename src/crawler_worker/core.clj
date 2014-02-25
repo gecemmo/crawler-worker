@@ -21,7 +21,7 @@
 
 (def rabbit-conn (rmq/connect {:host "ec2-54-213-238-4.us-west-2.compute.amazonaws.com"}))
 (def rabbit-ch (lch/open rabbit-conn))
-(def quote-exchange "stocks")
+(def quote-exchange "url-crawler")
 
 ;; nio completion handlers
 
@@ -74,7 +74,7 @@
                    (.append buff in)
                    (.append buff "\n")
                    (println "## SIZE: " (.length buff))
-                   (if (> (.length buff) (* 1 1024))
+                   (if (> (.length buff) (* 64 1024))
                      (do
                        (lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
                        (recur (java.lang.StringBuilder.)))
@@ -94,7 +94,7 @@
         ;(send url-count inc)
         ;(.append buff (normalize-url base-url (second s)))
         ;(.append buff "\n")
-        (println "*** NEW-URL: " (normalize-url base-url (second s)))))
+     ;   (println "*** NEW-URL: " (normalize-url base-url (second s)))))
       (recur buff))
     ;(println "TODO: send to MQ: " buff)
     ;(lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
@@ -109,7 +109,7 @@
       (doseq [s (re-seq  #"(?i)<a href=[\"\']([^>^\"\']*)" (String. in))]
         (>! url-channel (normalize-url base-url (second s)))
         (send url-count inc)
-        (println "*** NEW: " (normalize-url base-url (second s))))
+   ;     (println "*** NEW: " (normalize-url base-url (second s))))
       (recur))
     (.close sch)
     (println "Closing..." (.toString (java.util.Date.)) @url-count)))
@@ -128,13 +128,13 @@
   [^AsynchronousSocketChannel sch ach]
   (let [buf (byte-buf 1024)
         close (fn []
-                (println "CLOSING!!!")
+      ;          (println "CLOSING!!!")
                 (async/close! ach)
                 (.close sch))]
     (.read sch buf nil
            (with-handlers
              (fn [t cnt a]
-               (println "COUNT: " cnt)
+       ;        (println "COUNT: " cnt)
                (if (neg? cnt) (close)
                    (when-let [bytes (read-buf buf cnt)]
                      ;(go (>! ach bytes))
@@ -181,7 +181,7 @@
       (.connect client (java.net.InetSocketAddress. (.getHost url) 80)
                 nil (with-handler
                       (fn [& _]
-                        (println "connected..., sending request: " reqstr)
+                       ; (println "connected..., sending request: " reqstr)
                         (write-sock-ch client reqstr)
                         (read-sock-ch client ach))))
       (catch java.nio.channels.UnresolvedAddressException e (println (.getMessage e))))))
@@ -204,7 +204,7 @@
   "a channel reader that will close on channel close"
   (async/go-loop []
                  (when-let [in (<! ch)]
-                   (println "*** NEW: " in)
+;                   (println "*** NEW: " in)
 
                    (try
                      (crawl-url (java.net.URL. in))
