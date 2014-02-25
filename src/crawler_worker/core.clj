@@ -73,7 +73,7 @@
                  (when-let [in (<! url-channel)]
                    (.append buff in)
                    (.append buff "\n")
-                   (println "## SIZE: " (.length buff))
+                   ;(println "## SIZE: " (.length buff))
                    (if (> (.length buff) (* 64 1024))
                      (do
                        (lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
@@ -111,8 +111,8 @@
       ;  (send url-count inc))
 ;      (println "*** NEW: " (normalize-url base-url (second s))))
       (recur))
-    (.close sch)
-    (println "Closing..." (.toString (java.util.Date.)) @url-count)))
+    (.close sch)))
+;    (println "Closing..." (.toString (java.util.Date.)) @url-count)))
 
 (defn read-buf
   [^ByteBuffer buf cnt]
@@ -148,7 +148,7 @@
   [^AsynchronousSocketChannel sch ach]
   (let [buf (byte-buf 1024)
         close (fn []
-                (println "CLOSING!!!")
+                ;(println "CLOSING!!!")
                 (async/close! ach)
                 (.close sch))]
     (.read sch buf 5 TimeUnit/SECONDS nil
@@ -194,8 +194,8 @@
   (let [queue-name' (.getQueue (lq/declare ch queue-name :exclusive false :auto-delete true))
         handler     (fn [ch {:keys [routing-key] :as meta} ^bytes payload]
                       (go (>! ach (String. payload "UTF-8")))
-                      (println (format "[consumer] Consumed '%s' from %s, routing key: %s"
-                                       (String. payload "UTF-8") queue-name' routing-key)))]
+                      ;(println (format "[consumer] Consumed '%s' from %s, routing key: %s" (String. payload "UTF-8") queue-name' routing-key))
+                      )]
     (lq/bind    ch queue-name' quote-exchange :routing-key routing-key)
     (lc/subscribe ch queue-name' handler :auto-ack true) ach))
 
