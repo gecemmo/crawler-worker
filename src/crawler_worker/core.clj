@@ -94,7 +94,7 @@
         ;(send url-count inc)
         ;(.append buff (normalize-url base-url (second s)))
         ;(.append buff "\n")
-     ;   (println "*** NEW-URL: " (normalize-url base-url (second s)))))
+        (println "*** NEW-URL: " (normalize-url base-url (second s)))))
       (recur buff))
     ;(println "TODO: send to MQ: " buff)
     ;(lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
@@ -107,9 +107,9 @@
   (async/go-loop []
     (when-let [in (<! ch)]
       (doseq [s (re-seq  #"(?i)<a href=[\"\']([^>^\"\']*)" (String. in))]
-        (>! url-channel (normalize-url base-url (second s)))
-        (send url-count inc)))
-   ;     (println "*** NEW: " (normalize-url base-url (second s))))
+        (>! url-channel (normalize-url base-url (second s))))
+      ;  (send url-count inc))
+;      (println "*** NEW: " (normalize-url base-url (second s))))
       (recur))
     (.close sch)
     (println "Closing..." (.toString (java.util.Date.)) @url-count)))
