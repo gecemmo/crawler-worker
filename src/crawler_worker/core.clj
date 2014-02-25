@@ -108,7 +108,7 @@
     (when-let [in (<! ch)]
       (doseq [s (re-seq  #"(?i)<a href=[\"\']([^>^\"\']*)" (String. in))]
         (>! url-channel (normalize-url base-url (second s)))
-        (send url-count inc)
+        (send url-count inc)))
    ;     (println "*** NEW: " (normalize-url base-url (second s))))
       (recur))
     (.close sch)
