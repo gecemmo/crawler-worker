@@ -19,7 +19,7 @@
             [langohr.consumers :as lc]
             [langohr.basic     :as lb]))
 
-(def rabbit-conn (rmq/connect))
+(def rabbit-conn (rmq/connect {:host "ec2-54-213-238-4.us-west-2.compute.amazonaws.com"}))
 (def rabbit-ch (lch/open rabbit-conn))
 (def quote-exchange "stocks")
 
