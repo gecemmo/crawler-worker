@@ -69,12 +69,12 @@
 (def url-channel (chan))
 
 (defn read-and-send []
-  (async/go-loop [buff (java.lang.StringBuilder. (* 512 1024))]
+  (async/go-loop [buff (java.lang.StringBuilder. (* 520 1024))]
                  (when-let [in (<! url-channel)]
                    (.append buff in)
                    (.append buff "\n")
                    ;(println "## SIZE: " (.length buff))
-                   (if (> (.length buff) (* 256 1024))
+                   (if (> (.length buff) (* 512 1024))
                      (do
                        (lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
                        (recur (java.lang.StringBuilder.)))
