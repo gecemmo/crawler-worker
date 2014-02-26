@@ -73,34 +73,12 @@
                  (when-let [in (<! url-channel)]
                    (.append buff in)
                    (.append buff "\n")
-                   ;(println "## SIZE: " (.length buff))
                    (if (> (.length buff) (* 512 1024))
                      (do
                        (lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
                        (recur (java.lang.StringBuilder.)))
                      (recur buff)))))
 
-(read-and-send)
-
-
-(comment
-(defn ach-reader [ch base-url sch]
-  "a channel reader that will close on channel close"
-  (async/go-loop [buff (java.lang.StringBuilder.)]
-    (when-let [in (<! ch)]
-      ;(println (String. in))
-      (doseq [s (re-seq  #"(?i)<a href=[\"\']([^>^\"\']*)" (String. in))]
-        (>! url-channel (normalize-url base-url (second s)))
-        ;(send url-count inc)
-        ;(.append buff (normalize-url base-url (second s)))
-        ;(.append buff "\n")
-        (println "*** NEW-URL: " (normalize-url base-url (second s)))))
-      (recur buff))
-    ;(println "TODO: send to MQ: " buff)
-    ;(lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
-  (.close sch)
-  (println "Closing..." (.toString (java.util.Date.)) @url-count))
-)
 
 (defn ach-reader [ch base-url sch]
   "a channel reader that will close on channel close"
@@ -108,11 +86,8 @@
     (when-let [in (<! ch)]
       (doseq [s (re-seq  #"(?i)<a href=[\"\']([^>^\"\']*)" (String. in))]
         (>! url-channel (normalize-url base-url (second s))))
-      ;  (send url-count inc))
-;      (println "*** NEW: " (normalize-url base-url (second s))))
       (recur))
     (.close sch)))
-;    (println "Closing..." (.toString (java.util.Date.)) @url-count)))
 
 (defn read-buf
   [^ByteBuffer buf cnt]
@@ -122,33 +97,12 @@
       (.clear buf)
       bytes))
 
-(comment
-(defn read-sock-ch
-  "reads a socket channel using core.async channels"
-  [^AsynchronousSocketChannel sch ach]
-  (let [buf (byte-buf 1024)
-        close (fn []
-      ;          (println "CLOSING!!!")
-                (async/close! ach)
-                (.close sch))]
-    (.read sch buf nil
-           (with-handlers
-             (fn [t cnt a]
-       ;        (println "COUNT: " cnt)
-               (if (neg? cnt) (close)
-                   (when-let [bytes (read-buf buf cnt)]
-                     ;(go (>! ach bytes))
-                     (if (re-find #"</html>" (String. bytes)) (.close sch)
-                         (.read sch buf nil t)))))
-             (fn [] (close)))) ach))
-)
 
 (defn read-sock-ch
   "reads a socket channel using core.async channels"
   [^AsynchronousSocketChannel sch ach]
   (let [buf (byte-buf 1024)
         close (fn []
-                ;(println "CLOSING!!!")
                 (async/close! ach)
                 (.close sch))]
     (.read sch buf 5 TimeUnit/SECONDS nil
@@ -204,8 +158,6 @@
   "a channel reader that will close on channel close"
   (async/go-loop []
                  (when-let [in (<! ch)]
-;                   (println "*** NEW: " in)
-
                    (try
                      (crawl-url (java.net.URL. in))
                      (catch java.net.MalformedURLException e (println (.getMessage e))))
@@ -214,10 +166,7 @@
 
 (defn -main
   [& args]
-  (let [;conn      (rmq/connect)
-        ;ch        (lch/open conn)
-        ach       (chan)]
+  (let [ach       (chan)]
     (le/declare rabbit-ch quote-exchange "topic" :durable false :auto-delete true)
-    ;(le/declare rabbit-ch quote-exchange "discovered-urls" :durable false :auto-delete true)
     (create-topic-channel-reader rabbit-ch ach "topic" "to-crawl-urls")
     (ach-mq-reader ach)))
