@@ -74,7 +74,7 @@
                    (.append buff in)
                    (.append buff "\n")
                    ;(println "## SIZE: " (.length buff))
-                   (if (> (.length buff) (* 64 1024))
+                   (if (> (.length buff) (* 128 1024))
                      (do
                        (lb/publish rabbit-ch quote-exchange "discovered-urls" (.toString buff) :content-type "text/plain" :type "quote.update")
                        (recur (java.lang.StringBuilder.)))
